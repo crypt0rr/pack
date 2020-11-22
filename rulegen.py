@@ -392,8 +392,8 @@ class RuleGen:
             # TODO: May be I should split these two and see if I can generate 
             # rules for each of the suggestions
             for suggestion in suggestions[:self.max_words]:
-                suggestion = suggestion.replace(' ', '')
-                suggestion = suggestion.replace('-', '')
+                suggestion = suggestion.replace(' ', '').replace('-', '')
+                
                 if suggestion not in suggestions:
                     suggestions.append(suggestion)
 
@@ -404,14 +404,13 @@ class RuleGen:
             for suggestion in suggestions:
                 distance = self.levenshtein_distance(suggestion, pre_password)
 
-                word = dict()
-                word["suggestion"] = suggestion
-                word["distance"] = distance
-                word["password"] = pre_password
-                word["pre_rule"] = pre_rule
-                word["best_rule_length"] = 9999
-
-                words.append(word)
+                words.append({
+                    'suggestion': suggestion,
+                    'distance': distance,
+                    'password': pre_password,
+                    'pre_rule': pre_rule,
+                    'best_rule_length': 9999
+                })
 
         #######################################################################
         # Perform Optimization
