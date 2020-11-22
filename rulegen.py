@@ -601,8 +601,8 @@ class RuleGen:
         word_rules = word
 
         # Generate case statistics
-        password_lower = len([c for c in password if c.islower()])
-        password_upper = len([c for c in password if c.isupper()])
+        password_lower = sum(c.islower() for c in password)
+        password_upper = sum(c.isupper() for c in password)
 
         for i, (op, p, w) in enumerate(rules):
 
@@ -843,7 +843,7 @@ class RuleGen:
 
         # Skip passwords with less than 25% of alpha character
         # TODO: Make random word detection more reliable based on word entropy.
-        elif len([c for c in password if c.isalpha()]) < len(password) // 4:
+        elif sum(c.isalpha() for c in password) < len(password) // 4:
             if self.verbose and not self.quiet:
                 print("[!] %s => {skipping alpha less than 25%%} => %s" % (password, password))
             self.special_stats_total += 1
@@ -851,7 +851,7 @@ class RuleGen:
 
         # Only check english ascii passwords for now
         # TODO: Add support for more languages.
-        elif [c for c in password if ord(c) < 32 or ord(c) > 126]:
+        elif any(ord(c) < 32 or ord(c) > 126 for c in password):
             if self.verbose and not self.quiet:
                 print("[!] %s => {skipping non ascii english} => %s" % (password, password))
             self.foreign_stats_total += 1
