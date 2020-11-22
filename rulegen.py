@@ -899,11 +899,9 @@ class RuleGen:
 
         # Sorted list based on rule length
         for word in sorted(words, key=lambda w: len(w["hashcat_rules"][0])):
-
             words_queue.put(word["suggestion"])
 
             for hashcat_rule in word["hashcat_rules"]:
-
                 rule_length = len(hashcat_rule)
 
                 if not self.more_rules:
@@ -918,6 +916,7 @@ class RuleGen:
 
                 if rule_length <= self.max_rule_len:
                     hashcat_rule_str = " ".join(hashcat_rule + word["pre_rule"] or [':'])
+                    
                     if self.verbose:
                         print("[+] %s => %s => %s" % (word["suggestion"], hashcat_rule_str, password))
 
@@ -946,25 +945,24 @@ class RuleGen:
         """ Worker to store generated rules. """
         print("[*] Saving rules to %s" % output_rules_filename)
 
-        f = open(output_rules_filename, 'w')
-        if self.debug:
-            print("[*] Rule worker started.")
-        try:
-            while True:
-                rule = rules_queue.get()
-
-                # Interrupted by a Death Pill
-                if rule is None:
-                    break
-
-                f.write("%s\n" % rule)
-                f.flush()
-
-        except (KeyboardInterrupt, SystemExit):
+        with open(output_rules_filename, 'w') as f:
             if self.debug:
-                print("[*] Rule worker terminated.")
+                print("[*] Rule worker started.")
+            try:
+                while True:
+                    rule = rules_queue.get()
 
-        f.close()
+                    # Interrupted by a Death Pill
+                    if rule is None:
+                        break
+
+                    f.write("%s\n" % rule)
+                    f.flush()
+
+            except (KeyboardInterrupt, SystemExit):
+                if self.debug:
+                    print("[*] Rule worker terminated.")
+
         if self.debug:
             print("[*] Rule worker stopped.")
 
@@ -972,25 +970,24 @@ class RuleGen:
         """ Worker to store generated rules. """
         print("[*] Saving words to %s" % output_words_filename)
 
-        f = open(output_words_filename, 'w')
-        if self.debug:
-            print("[*] Word worker started.")
-        try:
-            while True:
-                word = words_queue.get()
-
-                # Interrupted by a Death Pill
-                if word is None:
-                    break
-
-                f.write("%s\n" % word)
-                f.flush()
-
-        except (KeyboardInterrupt, SystemExit):
+        with open(output_words_filename, 'w') as f:
             if self.debug:
-                print("[*] Word worker terminated.")
+                print("[*] Word worker started.")
+            try:
+                while True:
+                    word = words_queue.get()
 
-        f.close()
+                    # Interrupted by a Death Pill
+                    if word is None:
+                        break
+
+                    f.write("%s\n" % word)
+                    f.flush()
+
+            except (KeyboardInterrupt, SystemExit):
+                if self.debug:
+                    print("[*] Word worker terminated.")
+
         if self.debug:
             print("[*] Word worker stopped.")
 
@@ -1014,47 +1011,45 @@ class RuleGen:
         multiprocessing.Process(target=self.word_worker, args=(words_queue, "%s.word" % self.basename)).start()
 
         # Continue with the main thread
-
-        f = open(passwords_file, 'r', encoding="latin-1", errors='ignore')
-
         password_count = 0
-        analysis_start = time.time()
-        segment_start = analysis_start
-        try:
-            for password in f:
-                password = password.rstrip('\r\n')
-                if len(password) > 0:
 
-                    # Provide analysis time feedback to the user
-                    if not self.quiet and password_count != 0 and password_count % 5000 == 0:
-                        segment_time = time.time() - segment_start
-                        print("[*] Processed %d passwords in %.2f seconds at the rate of %.2f p/sec" %
-                              (password_count, segment_start - analysis_start, 5000 / segment_time))
-                        segment_start = time.time()
+        with open(passwords_file, 'r', encoding="latin-1", errors='ignore') as f:
+            analysis_start = time.time()
+            segment_start = analysis_start
+            
+            try:
+                for password in f:
+                    password = password.rstrip('\r\n')
+                    
+                    if len(password) > 0:
+                        # Provide analysis time feedback to the user
+                        if not self.quiet and password_count != 0 and password_count % 5000 == 0:
+                            segment_time = time.time() - segment_start
+                            print("[*] Processed %d passwords in %.2f seconds at the rate of %.2f p/sec" %
+                                  (password_count, segment_start - analysis_start, 5000 / segment_time))
+                            segment_start = time.time()
 
-                    password_count += 1
+                        password_count += 1
 
-                    # Perform preliminary checks and add password to the queue
-                    if self.check_reversible_password(password):
-                        passwords_queue.put(password)
+                        # Perform preliminary checks and add password to the queue
+                        if self.check_reversible_password(password):
+                            passwords_queue.put(password)
 
-        except (KeyboardInterrupt, SystemExit):
-            print("\n[!] Rulegen was interrupted.")
+            except (KeyboardInterrupt, SystemExit):
+                print("\n[!] Rulegen was interrupted.")
 
-        else:
-            # Signal workers to stop.
-            for i in range(self.threads):
-                passwords_queue.put(None)
+            else:
+                # Signal workers to stop.
+                for i in range(self.threads):
+                    passwords_queue.put(None)
 
-                # Wait for all of the queued passwords to finish.
-            while not passwords_queue.empty():
-                time.sleep(1)
+                    # Wait for all of the queued passwords to finish.
+                while not passwords_queue.empty():
+                    time.sleep(1)
 
-            # Signal writers to stop.
-            rules_queue.put(None)
-            words_queue.put(None)
-
-        f.close()
+                # Signal writers to stop.
+                rules_queue.put(None)
+                words_queue.put(None)
 
         analysis_time = time.time() - analysis_start
         print("[*] Finished processing %d passwords in %.2f seconds at the rate of %.2f p/sec" %
@@ -1105,13 +1100,11 @@ class RuleGen:
     ############################################################################
     def verify_hashcat_rules(self, word, rules, password):
 
-        f = open("%s/test.rule" % HASHCAT_PATH, 'w')
-        f.write(" ".join(rules))
-        f.close()
+        with open("%s/test.rule" % HASHCAT_PATH, 'w') as f:
+            f.write(" ".join(rules))
 
-        f = open("%s/test.word" % HASHCAT_PATH, 'w')
-        f.write(word)
-        f.close()
+        with open("%s/test.word" % HASHCAT_PATH, 'w') as f:
+            f.write(word)
 
         p = subprocess.Popen(["%s/hashcat-cli64.bin" % HASHCAT_PATH, "-r", "%s/test.rule" % HASHCAT_PATH, "--stdout",
                               "%s/test.word" % HASHCAT_PATH], stdout=subprocess.PIPE)
