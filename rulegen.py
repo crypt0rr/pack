@@ -204,22 +204,23 @@ class RuleGen:
 
         ########################################################################
         # Common numeric and special character substitutions (1337 5p34k)
-        self.leet = dict()
-        self.leet["1"] = "i"
-        self.leet["2"] = "z"
-        self.leet["3"] = "e"
-        self.leet["4"] = "a"
-        self.leet["5"] = "s"
-        self.leet["6"] = "b"
-        self.leet["7"] = "t"
-        self.leet["8"] = "b"
-        self.leet["9"] = "g"
-        self.leet["0"] = "o"
-        self.leet["!"] = "i"
-        self.leet["|"] = "i"
-        self.leet["@"] = "a"
-        self.leet["$"] = "s"
-        self.leet["+"] = "t"
+        self.leet = {
+            '1': 'i',
+            '2': 'z',
+            '3': 'e',
+            '4': 'a',
+            '5': 's',
+            '6': 'b',
+            '7': 't',
+            '8': 'b',
+            '9': 'g',
+            '0': 'o',
+            '!': 'i',
+            '|': 'i',
+            '@': 'a',
+            '$': 's',
+            '+': 't'
+        }
 
         ########################################################################
         # Preanalysis rules to bruteforce for each word
